@@ -1,0 +1,78 @@
+#icon {
+	-webkit-transition: background 0.3s;
+}
+body.cleaning #icon {
+	background: #333;	
+	
+	-webkit-animation: cleaning 3s infinite alternate;
+}
+
+@-webkit-keyframes cleaning {
+	0%, 100% {
+		-webkit-transform: translateX(-5px) translateY(-1px);
+	}
+	50% {
+		-webkit-transform: translateX(5px) translateY(1px);
+	}
+}
+
+.table {
+	display: table;
+	width: 100%;
+	height: 100%;
+}
+.tablecell {
+	display: table-cell;
+	width: 100%;
+	vertical-align: middle;
+}
+
+#status {
+	position: absolute;
+	left: 120px;
+	top: 10px;
+	bottom: 10px;
+	right: 30px;
+}
+
+#battery {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+}
+	#battery-percentage {
+		line-height: 20px;
+		float: left;
+		color: #999;
+		font-size: 12px;
+		text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+	}
+	#battery-icon {
+		margin-left: 5px;
+		float: right;
+		position: relative;
+		height: 20px;
+		width: 10px;
+	}
+		#battery-icon-charge {
+			background: #34D31A;
+			position: absolute;
+			left: 0;
+			bottom: 0;
+			right: 0;
+			box-shadow: inset 0 0 3px rgba(0,0,0,.1);
+			-webkit-transition: all 0.3s;
+		}
+		#battery-icon.charging:after {
+			position: absolute;
+			left: 1px;
+			top: 2px;
+			display: block;
+			content: "";
+			width: 8px;
+			height: 16px;
+			background: white;
+			-webkit-mask-image: url(../img/charging.svg);
+			-webkit-mask-size: contain;
+			-webkit-mask-repeat: no-repeat;
+		}

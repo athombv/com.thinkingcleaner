@@ -1,0 +1,116 @@
+{
+	"id": "com.thinkingcleaner",
+	"version": "1.0",
+	"name": {
+		"en": "Thinking Cleaner"
+	},
+	"description": {
+		"en": "Control your Roomba"
+	},
+	"author": {
+		"name": "ThinkingBits",
+		"website": "http://www.thinkingcleaner.com"
+	},
+	"dependencies": {
+		"request": "*",
+		"mdns-js": "*"
+	},
+	"permissions": [
+		"homey:manager:flow"
+	],
+	"images": {
+		"large": "./assets/images/large.jpg",
+		"small": "./assets/images/small.png"
+	},
+	"drivers": [
+		{
+			"name": {
+				"en": "Thinking Cleaner"
+			},
+			"id": "tc",
+			"category": "appliance",
+			"capabilities": [ "vacuumcleaner.cleaning" ],
+			"pair": [
+				{
+					"id": "list_devices",
+					"template": "list_devices",
+					"navigation": {
+						"next": "add_cleaner"
+					}
+				},
+				{
+					"id": "add_cleaner",
+					"template": "add_devices"
+				}
+			],		
+			"mobile": {
+				"css": [ "style.css" ],
+				"js": [ "tc.js" ]
+			}
+		}
+	],
+	"flow": {
+		"triggers": [
+			{
+				"method": "started",
+				"title": {
+					"en": "Started cleaning",
+					"nl": "Gestart met stofzuigen"
+				}
+			},
+			{
+				"method": "stopped",
+				"title": {
+					"en": "Stopped cleaning",
+					"nl": "Gestopt met stofzuigen"
+				}
+			},
+			{
+				"method": "docked",
+				"title": {
+					"en": "Docked",
+					"nl": "In het basisstation"
+				}
+			}
+		],
+		"conditions": [
+			{
+				"method": "cleaning",
+				"title": {
+					"en": "Is cleaning",
+					"nl": "Aan het schoonmaken"
+				}
+			},
+			{
+				"method": "docked",
+				"title": {
+					"en": "Is docked",
+					"nl": "In het basisstation"
+				}
+			}
+		],
+		"actions": [
+			{
+				"method": "clean",
+				"title": {
+					"en": "Start cleaning",
+					"nl": "Ga stofzuigen"
+				}
+			},
+			{
+				"method": "stop",
+				"title": {
+					"en": "Pause cleaning",
+					"nl": "Pauzeer stofzuigen"
+				}
+			},
+			{
+				"method": "dock",
+				"title": {
+					"en": "Go to docking station",
+					"nl": "Ga naar basisstation"
+				}
+			}
+		]
+	}
+}
