@@ -137,7 +137,7 @@ var pair = {
 	},
 	
 	add_device: function( callback, emit, data ){
-		var device = devices[ data ];				
+		var device = devices[ data.data.id ];	
 		// play a sound on the roomba when paired :)
 		tc.api( device.ip, 'command.json?command=find_me' );
 	}
