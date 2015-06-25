@@ -38,8 +38,7 @@ body.cleaning #icon {
 #battery {
 	position: absolute;
 	top: 10px;
-	right: 10px;
-}
+	right: 10px;}
 	#battery-percentage {
 		line-height: 20px;
 		float: left;
@@ -72,6 +71,7 @@ body.cleaning #icon {
 			width: 8px;
 			height: 16px;
 			background: white;
+			border-radius: 2px;
 			-webkit-mask-image: url(../img/charging.svg);
 			-webkit-mask-size: contain;
 			-webkit-mask-repeat: no-repeat;

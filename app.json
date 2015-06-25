@@ -28,8 +28,8 @@
 				"en": "Thinking Cleaner"
 			},
 			"id": "tc",
-			"category": "appliance",
-			"capabilities": [ "vacuumcleaner.cleaning" ],
+			"class": "vacuumcleaner",
+			"capabilities": [ "cleaning", "docked", "spot_cleaning", "charging", "battery_level" ],
 			"pair": [
 				{
 					"id": "list_devices",

@@ -46,27 +46,17 @@ function init( callback ) {
 			name: name,
 			ip: device.addresses[0]
 	    }
-	    
+	    	    
 	    Homey.log('Found ThinkingCleaner', name, device.addresses[0] );
 	    
 	    setInterval(function(){
 		    tc.getStatus( devices[ id ] );
-	    }, 1000);
+	    }, 5000);
 
 	});
 	
 	callback();
 	
-/*
-	Homey.manager('mobile').on('clean', function( data ){
-		console.log(data);
-	});
-*/
-}
-
-function getDevice( id ) {
-	if( typeof devices[id] == 'undefined' ) return new Error("device is not connected (yet)");
-	return devices[id];
 }
 
 var tc = {
@@ -83,6 +73,11 @@ var tc = {
 		});		
 	},
 	
+	getDevice: function( id ) {
+		if( typeof devices[id] == 'undefined' ) return new Error("device is not connected (yet)");
+		return devices[id];
+	},
+	
 	getStatus: function( device, callback ){
 		tc.api(device.ip, 'status.json', function( result ){
 						
@@ -92,21 +87,32 @@ var tc = {
 				if( result.status[key] === '1' ) result.status[key] = true;
 			}
 			
+			// generate the state object						
+			var state = {
+				cleaning		: result.status['cleaning'],
+				spot_cleaning	: result.status['cleaner_state'] == 'st_clean_spot',
+				docked			: result.status['cleaner_state'].substr(0,7) == 'st_base',
+				charging		: result.status['cleaner_state'] == 'st_base_recon'
+					|| result.status['cleaner_state'] == 'st_base_full'
+					|| result.status['cleaner_state'] == 'st_base_trickle',
+				battery_level	: result.status.battery_charge
+			}
+						
 			// perform callback
 			if( typeof callback == 'function' ) {
-				callback( result.status );
+				callback( state );
 			}
 						
 			// emit realtime event if something has changed
 			if( typeof tc.statusCache[ device.id ] == 'undefined' ) {
-				tc.statusCache[ device.id ] = JSON.stringify(result.status);
+				tc.statusCache[ device.id ] = JSON.stringify(state);
 			}
 			
 			if( JSON.stringify( result.status ) != tc.statusCache[ device.id ] ) {
-				tc.statusCache[ device.id ] = JSON.stringify(result.status);
+				tc.statusCache[ device.id ] = JSON.stringify(state);
 				Homey.manager('drivers').realtime('tc', {
 					id: device.id
-				}, 'state', result.status);
+				}, 'state', state);
 			}
 			
 		});
@@ -137,7 +143,8 @@ var pair = {
 	},
 	
 	add_device: function( callback, emit, data ){
-		var device = devices[ data.data.id ];	
+		var device = devices[ data.data.id ];
+		
 		// play a sound on the roomba when paired :)
 		tc.api( device.ip, 'command.json?command=find_me' );
 	}
@@ -149,40 +156,103 @@ module.exports.pair = pair;
 
 module.exports.state = {
 	get: function( device, callback ){
-		var device = getDevice( device.id );
+		var device = tc.getDevice( device.id );
 		if( device instanceof Error ) return callback( device );
 
 		tc.getStatus( device, callback );		
 	},
-	set: function( device, state, callback ){
+	set: function( device, state, callback ) {
+		if( typeof state.cleaning 			!= 'undefined' ) module.exports.cleaning.set(		 device, state.cleaning		, function(){} );
+		if( typeof state.spot_cleaning 		!= 'undefined' ) module.exports.spot_cleaning.set(	 device, state.spot_cleaning, function(){} );
+		if( typeof state.docked 			!= 'undefined' ) module.exports.docked.set(			 device, state.docked		, function(){} );
+		
+		var device = tc.getDevice( device.id );
+		if( device instanceof Error ) return callback( device );
+
+		tc.getStatus( device, callback );	
 	}
 }
 
-module.exports['vacuumcleaner.cleaning'] = {
+module.exports.cleaning = {
 	get: function( device, callback ){
-		var device = getDevice( device.id );
+		var device = tc.getDevice( device.id );
 		if( device instanceof Error ) return callback( device );
 		
 		tc.getStatus( device, function(state){
-			callback( state.cleaning === "1" );			
+			callback( state.cleaning );			
 		});
 		
 	},
-	set: function( device, cleaning, callback ){
-		var device = getDevice( device.id );
-		if( device instanceof Error ) return callback( device );
+	set: function( device, value, callback ){
 				
+		var device = tc.getDevice( device.id );
+		if( device instanceof Error ) return callback( device );
+		
 		// first, get the status
 		tc.getStatus( device, function(state){
 						
 			// then, set the status (because clean simulates a button press, not really start/stop)
-			if( (state.cleaning && cleaning) || (!state.cleaning && !cleaning) ) {
-				callback( cleaning );
-			} else if( (state.cleaning && !cleaning) || (!state.cleaning && cleaning) ) {
+			if( (state.cleaning && value) || (!state.cleaning && !value) ) {
+				callback( value );
+			} else if( (state.cleaning && !value) || (!state.cleaning && value) ) {
 				tc.command( device, 'clean', function(state){
-					callback( cleaning );
+					callback( value );
 				});				
 			}
+		});
+		
+	}
+}
+
+module.exports.spot_cleaning = {
+	get: function( device, callback ){
+		var device = tc.getDevice( device.id );
+		if( device instanceof Error ) return callback( device );
+		
+		tc.getStatus( device, function(state){
+			callback( state.spot_cleaning );			
+		});
+		
+	},
+	set: function( device, value, callback ) {
+		// TODO
+	}
+}
+
+module.exports.docked = {
+	get: function( device, callback ){
+		var device = tc.getDevice( device.id );
+		if( device instanceof Error ) return callback( device );
+		
+		tc.getStatus( device, function(state){
+			callback( state.docked );			
+		});
+		
+	},
+	set: function( device, value, callback ) {
+		// TODO
+	}
+}
+
+module.exports.charging = {
+	get: function( device, callback ){
+		var device = tc.getDevice( device.id );
+		if( device instanceof Error ) return callback( device );
+		
+		tc.getStatus( device, function(state){
+			callback( state.charging );			
+		});
+		
+	}
+}
+
+module.exports.battery_level = {
+	get: function( device, callback ){
+		var device = tc.getDevice( device.id );
+		if( device instanceof Error ) return callback( device );
+		
+		tc.getStatus( device, function(state){
+			callback( state.battery_level );			
 		});
 		
 	}
