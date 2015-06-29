@@ -154,106 +154,109 @@ var pair = {
 module.exports.init = init;
 module.exports.pair = pair;
 
-module.exports.state = {
-	get: function( device, callback ){
-		var device = tc.getDevice( device.id );
-		if( device instanceof Error ) return callback( device );
-
-		tc.getStatus( device, callback );		
+module.exports.capabilities = {
+	
+	state: {
+		get: function( device, callback ){
+			var device = tc.getDevice( device.id );
+			if( device instanceof Error ) return callback( device );
+	
+			tc.getStatus( device, callback );		
+		},
+		set: function( device, state, callback ) {
+			if( typeof state.cleaning 			!= 'undefined' ) module.exports.cleaning.set(		 device, state.cleaning		, function(){} );
+			if( typeof state.spot_cleaning 		!= 'undefined' ) module.exports.spot_cleaning.set(	 device, state.spot_cleaning, function(){} );
+			if( typeof state.docked 			!= 'undefined' ) module.exports.docked.set(			 device, state.docked		, function(){} );
+			
+			var device = tc.getDevice( device.id );
+			if( device instanceof Error ) return callback( device );
+	
+			tc.getStatus( device, callback );	
+		}
 	},
-	set: function( device, state, callback ) {
-		if( typeof state.cleaning 			!= 'undefined' ) module.exports.cleaning.set(		 device, state.cleaning		, function(){} );
-		if( typeof state.spot_cleaning 		!= 'undefined' ) module.exports.spot_cleaning.set(	 device, state.spot_cleaning, function(){} );
-		if( typeof state.docked 			!= 'undefined' ) module.exports.docked.set(			 device, state.docked		, function(){} );
-		
-		var device = tc.getDevice( device.id );
-		if( device instanceof Error ) return callback( device );
-
-		tc.getStatus( device, callback );	
-	}
-}
-
-module.exports.cleaning = {
-	get: function( device, callback ){
-		var device = tc.getDevice( device.id );
-		if( device instanceof Error ) return callback( device );
-		
-		tc.getStatus( device, function(state){
-			callback( state.cleaning );			
-		});
-		
-	},
-	set: function( device, value, callback ){
-				
-		var device = tc.getDevice( device.id );
-		if( device instanceof Error ) return callback( device );
-		
-		// first, get the status
-		tc.getStatus( device, function(state){
-						
-			// then, set the status (because clean simulates a button press, not really start/stop)
-			if( (state.cleaning && value) || (!state.cleaning && !value) ) {
-				callback( value );
-			} else if( (state.cleaning && !value) || (!state.cleaning && value) ) {
-				tc.command( device, 'clean', function(state){
+	
+	cleaning: {
+		get: function( device, callback ){
+			var device = tc.getDevice( device.id );
+			if( device instanceof Error ) return callback( device );
+			
+			tc.getStatus( device, function(state){
+				callback( state.cleaning );			
+			});
+			
+		},
+		set: function( device, value, callback ){
+					
+			var device = tc.getDevice( device.id );
+			if( device instanceof Error ) return callback( device );
+			
+			// first, get the status
+			tc.getStatus( device, function(state){
+							
+				// then, set the status (because clean simulates a button press, not really start/stop)
+				if( (state.cleaning && value) || (!state.cleaning && !value) ) {
 					callback( value );
-				});				
-			}
-		});
-		
-	}
-}
-
-module.exports.spot_cleaning = {
-	get: function( device, callback ){
-		var device = tc.getDevice( device.id );
-		if( device instanceof Error ) return callback( device );
-		
-		tc.getStatus( device, function(state){
-			callback( state.spot_cleaning );			
-		});
-		
+				} else if( (state.cleaning && !value) || (!state.cleaning && value) ) {
+					tc.command( device, 'clean', function(state){
+						callback( value );
+					});				
+				}
+			});
+			
+		}
 	},
-	set: function( device, value, callback ) {
-		// TODO
-	}
-}
 
-module.exports.docked = {
-	get: function( device, callback ){
-		var device = tc.getDevice( device.id );
-		if( device instanceof Error ) return callback( device );
-		
-		tc.getStatus( device, function(state){
-			callback( state.docked );			
-		});
-		
+	spot_cleaning: {
+		get: function( device, callback ){
+			var device = tc.getDevice( device.id );
+			if( device instanceof Error ) return callback( device );
+			
+			tc.getStatus( device, function(state){
+				callback( state.spot_cleaning );			
+			});
+			
+		},
+		set: function( device, value, callback ) {
+			// TODO
+		}
 	},
-	set: function( device, value, callback ) {
-		// TODO
-	}
-}
+	
+	docked: {
+		get: function( device, callback ){
+			var device = tc.getDevice( device.id );
+			if( device instanceof Error ) return callback( device );
+			
+			tc.getStatus( device, function(state){
+				callback( state.docked );			
+			});
+			
+		},
+		set: function( device, value, callback ) {
+			// TODO
+		}
+	},
+	
+	charging: {
+		get: function( device, callback ){
+			var device = tc.getDevice( device.id );
+			if( device instanceof Error ) return callback( device );
+			
+			tc.getStatus( device, function(state){
+				callback( state.charging );			
+			});
+			
+		}
+	},
 
-module.exports.charging = {
-	get: function( device, callback ){
-		var device = tc.getDevice( device.id );
-		if( device instanceof Error ) return callback( device );
-		
-		tc.getStatus( device, function(state){
-			callback( state.charging );			
-		});
-		
-	}
-}
-
-module.exports.battery_level = {
-	get: function( device, callback ){
-		var device = tc.getDevice( device.id );
-		if( device instanceof Error ) return callback( device );
-		
-		tc.getStatus( device, function(state){
-			callback( state.battery_level );			
-		});
-		
+	battery_level: {
+		get: function( device, callback ){
+			var device = tc.getDevice( device.id );
+			if( device instanceof Error ) return callback( device );
+			
+			tc.getStatus( device, function(state){
+				callback( state.battery_level );			
+			});
+			
+		}
 	}
 }
