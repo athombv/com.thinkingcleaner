@@ -79,14 +79,36 @@
 				"title": {
 					"en": "Is cleaning",
 					"nl": "Aan het schoonmaken"
-				}
+				},
+				"args": [
+					{
+						"name": "device",
+						"type": "device",
+						"placeholder": {
+							"en": "Find a Roomba...",
+							"nl": "Vind een Roomba..."
+						},
+						"filter": "driver_uri=homey:app:com.thinkingcleaner&driver_id=tc"
+					}
+				]
 			},
 			{
 				"method": "docked",
 				"title": {
 					"en": "Is docked",
 					"nl": "In het basisstation"
-				}
+				},
+				"args": [
+					{
+						"name": "device",
+						"type": "device",
+						"placeholder": {
+							"en": "Find a Roomba...",
+							"nl": "Vind een Roomba..."
+						},
+						"filter": "driver_uri=homey:app:com.thinkingcleaner&driver_id=tc"
+					}
+				]
 			}
 		],
 		"actions": [
@@ -95,21 +117,54 @@
 				"title": {
 					"en": "Start cleaning",
 					"nl": "Ga stofzuigen"
-				}
+				},
+				"args": [
+					{
+						"name": "device",
+						"type": "device",
+						"placeholder": {
+							"en": "Find a Roomba...",
+							"nl": "Vind een Roomba..."
+						},
+						"filter": "driver_uri=homey:app:com.thinkingcleaner&driver_id=tc"
+					}
+				]
 			},
 			{
-				"method": "stop",
+				"method": "pause",
 				"title": {
 					"en": "Pause cleaning",
 					"nl": "Pauzeer stofzuigen"
-				}
+				},
+				"args": [
+					{
+						"name": "device",
+						"type": "device",
+						"placeholder": {
+							"en": "Find a Roomba...",
+							"nl": "Vind een Roomba..."
+						},
+						"filter": "driver_uri=homey:app:com.thinkingcleaner&driver_id=tc"
+					}
+				]
 			},
 			{
 				"method": "dock",
 				"title": {
 					"en": "Go to docking station",
 					"nl": "Ga naar basisstation"
-				}
+				},
+				"args": [
+					{
+						"name": "device",
+						"type": "device",
+						"placeholder": {
+							"en": "Find a Roomba...",
+							"nl": "Vind een Roomba..."
+						},
+						"filter": "driver_uri=homey:app:com.thinkingcleaner&driver_id=tc"
+					}
+				]
 			}
 		]
 	}

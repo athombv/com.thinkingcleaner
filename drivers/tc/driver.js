@@ -7,7 +7,7 @@ var browser;
 
 var devices = {};
 
-function init( callback ) {
+function init( devices, callback ) {
 
 	//if you have another mdns daemon running, like avahi or bonjour, uncomment following line
 	mdns.excludeInterface('0.0.0.0');
