@@ -110,7 +110,7 @@ var tc = {
 			
 			if( JSON.stringify( result.status ) != tc.statusCache[ device.id ] ) {
 				tc.statusCache[ device.id ] = JSON.stringify(state);
-				Homey.manager('drivers').realtime('tc', {
+				module.exports.realtime('tc', {
 					id: device.id
 				}, 'state', state);
 			}
