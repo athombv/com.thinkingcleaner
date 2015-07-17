@@ -25,7 +25,6 @@ App.prototype.init = function(){
 	
 	// flow:action:start
 	Homey.manager('flow').on('action.clean', function( args, callback ){
-		console.log('args', args)
 		if( typeof args.device == 'undefined' ) return;
 		var driver = Homey.manager('drivers').getDriver( args.device.driver.id );
 			driver.capabilities.cleaning.set( args.device.data, true, callback );

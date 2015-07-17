@@ -5,7 +5,7 @@ var mdns 		= require('mdns-js');
 
 var browser;
 
-var devices = {};
+var cleaners = {};
 
 function init( devices, callback ) {
 
@@ -18,44 +18,49 @@ function init( devices, callback ) {
 	// start discovery when ready
 	browser.on('ready', function () {
 		browser.discover();
+		callback();
 	});
 	
 	// found an entry
-	browser.on('update', function(device) {
+	browser.on('update', function(cleaner) {
 				
 		// check if it's a ThinkingCleaner
-	    if( device.txt[0].indexOf('thinkingcleaner_uuid') === -1 ) return;
+	    if( cleaner.txt[0].indexOf('thinkingcleaner_uuid') === -1 ) return;
 	    	    
 		// parse the txt data
 		// 'tc_data={"thinkingcleaner_uuid":"011d29348f8733ee","is_configured":true}' (String) -> 
 		///			{"thinkingcleaner_uuid":"011d29348f8733ee","is_configured":true} (Object)
-		var metadata = device.txt[0].substring(8);
+		var metadata = cleaner.txt[0].substring(8);
 			metadata = JSON.parse(metadata);
 		
 		var id = metadata.thinkingcleaner_uuid;
 			
 		// prevent duplicate devices (mdns sometimes fires twice)
-		if( typeof devices[ id ] != 'undefined' ) return;
+		if( typeof cleaners[ id ] != 'undefined' ) return;
 		
-		var name = device.host;
+		var name = cleaner.host;
 			name = name.replace('.local', '');
 	    		    
 	    // add it to the list of cleaners
-	    devices[ id ] = {
+	    cleaners[ id ] = {
 			id: id,
 			name: name,
-			ip: device.addresses[0]
+			ip: cleaner.addresses[0]
 	    }
 	    	    
-	    Homey.log('Found ThinkingCleaner', name, device.addresses[0] );
+	    Homey.log('Found ThinkingCleaner', name, cleaner.addresses[0] );
 	    
-	    setInterval(function(){
-		    tc.getStatus( devices[ id ] );
-	    }, 5000);
+	    // check if this cleaner is already paired
+	    devices.forEach(function(device){
+		    if( device.id == id ) {
+			    setInterval(function(){
+				    tc.getStatus( cleaners[ id ] );
+			    }, 5000);			    
+		    }
+	    });
+	    
 
 	});
-	
-	callback();
 	
 }
 
@@ -74,8 +79,8 @@ var tc = {
 	},
 	
 	getDevice: function( id ) {
-		if( typeof devices[id] == 'undefined' ) return new Error("device is not connected (yet)");
-		return devices[id];
+		if( typeof cleaners[id] == 'undefined' ) return new Error("device is not connected (yet)");
+		return cleaners[id];
 	},
 	
 	getStatus: function( device, callback ){
@@ -127,23 +132,23 @@ var tc = {
 var pair = {
 	
 	// get a list of all the found Thinking Cleaners
-	list_devices: function( callback, emit, data ){		
-		
-		var devices_ = [];
-		for( var device in devices ) {
-			devices_.push({
-				name: devices[ device ].name,
+	list_devices: function( callback, emit, data ){
+				
+		var devices = [];
+		for( var cleaner in cleaners ) {
+			devices.push({
+				name: cleaners[ cleaner ].name,
 				data: {
-					id: devices[ device ].id
+					id: cleaners[ cleaner ].id
 				}
 			})
-		}				
+		}		
 		
-		callback( devices_ );
+		callback( devices );
 	},
 	
 	add_device: function( callback, emit, data ){
-		var device = devices[ data.data.id ];
+		var device = cleaners[ data.data.id ];
 		
 		// play a sound on the roomba when paired :)
 		tc.api( device.ip, 'command.json?command=find_me' );

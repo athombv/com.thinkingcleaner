@@ -52,21 +52,21 @@
 	"flow": {
 		"triggers": [
 			{
-				"method": "started",
+				"id": "started",
 				"title": {
 					"en": "Started cleaning",
 					"nl": "Gestart met stofzuigen"
 				}
 			},
 			{
-				"method": "stopped",
+				"id": "stopped",
 				"title": {
 					"en": "Stopped cleaning",
 					"nl": "Gestopt met stofzuigen"
 				}
 			},
 			{
-				"method": "docked",
+				"id": "docked",
 				"title": {
 					"en": "Docked",
 					"nl": "In het basisstation"
@@ -75,7 +75,7 @@
 		],
 		"conditions": [
 			{
-				"method": "cleaning",
+				"id": "cleaning",
 				"title": {
 					"en": "Is cleaning",
 					"nl": "Aan het schoonmaken"
@@ -93,7 +93,7 @@
 				]
 			},
 			{
-				"method": "docked",
+				"id": "docked",
 				"title": {
 					"en": "Is docked",
 					"nl": "In het basisstation"
@@ -113,7 +113,7 @@
 		],
 		"actions": [
 			{
-				"method": "clean",
+				"id": "clean",
 				"title": {
 					"en": "Start cleaning",
 					"nl": "Ga stofzuigen"
@@ -131,7 +131,7 @@
 				]
 			},
 			{
-				"method": "pause",
+				"id": "pause",
 				"title": {
 					"en": "Pause cleaning",
 					"nl": "Pauzeer stofzuigen"
@@ -149,7 +149,7 @@
 				]
 			},
 			{
-				"method": "dock",
+				"id": "dock",
 				"title": {
 					"en": "Go to docking station",
 					"nl": "Ga naar basisstation"
