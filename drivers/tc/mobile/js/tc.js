@@ -28,7 +28,7 @@ function onHomeyReady(){
 function updateStatusGUI( state ) {
 		
 	// state
-	var stateEl = document.getElementById('state-text');
+	var stateEl = document.getElementById('status');
 	
 	stateEl.innerHTML = 'Idle...';
 	if( state.cleaning )
