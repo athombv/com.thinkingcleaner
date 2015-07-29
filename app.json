@@ -1,6 +1,7 @@
 {
 	"id": "com.thinkingcleaner",
-	"version": "1.0",
+	"version": "1.0.0",
+	"compatibility": "0.x || 1.x",
 	"name": {
 		"en": "Thinking Cleaner"
 	},
