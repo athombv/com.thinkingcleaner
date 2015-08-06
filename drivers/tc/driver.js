@@ -160,38 +160,24 @@ module.exports.init = init;
 module.exports.pair = pair;
 
 module.exports.capabilities = {
-	
-	state: {
-		get: function( device, callback ){
-			var device = tc.getDevice( device.id );
-			if( device instanceof Error ) return callback( device );
-	
-			tc.getStatus( device, callback );		
-		},
-		set: function( device, state, callback ) {
-			if( typeof state.cleaning 			!= 'undefined' ) module.exports.cleaning.set(		 device, state.cleaning		, function(){} );
-			if( typeof state.spot_cleaning 		!= 'undefined' ) module.exports.spot_cleaning.set(	 device, state.spot_cleaning, function(){} );
-			if( typeof state.docked 			!= 'undefined' ) module.exports.docked.set(			 device, state.docked		, function(){} );
-			
-			var device = tc.getDevice( device.id );
-			if( device instanceof Error ) return callback( device );
-	
-			tc.getStatus( device, callback );	
-		}
-	},
-	
-	cleaning: {
+
+	vacuumcleaner_state: {
 		get: function( device, callback ){
 			var device = tc.getDevice( device.id );
 			if( device instanceof Error ) return callback( device );
 			
 			tc.getStatus( device, function(state){
-				callback( state.cleaning );			
+				callback({
+					"cleaning": state.cleaning,
+					"docked": state.docked,
+					"spot": state.spot_cleaning,
+					"charging": state.charging
+				});
 			});
 			
 		},
 		set: function( device, value, callback ){
-					
+						
 			var device = tc.getDevice( device.id );
 			if( device instanceof Error ) return callback( device );
 			
@@ -199,69 +185,26 @@ module.exports.capabilities = {
 			tc.getStatus( device, function(state){
 							
 				// then, set the status (because clean simulates a button press, not really start/stop)
-				if( (state.cleaning && value) || (!state.cleaning && !value) ) {
+				if( (state.cleaning && value.cleaning ) || (!state.cleaning && !value.cleaning) ) {
 					callback( value );
-				} else if( (state.cleaning && !value) || (!state.cleaning && value) ) {
+				} else if( (state.cleaning && !value.cleaning) || (!state.cleaning && value.cleaning) ) {
 					tc.command( device, 'clean', function(state){
-						callback( value );
+						callback( value.cleaning );
 					});				
 				}
 			});
 			
 		}
 	},
-
-	spot_cleaning: {
-		get: function( device, callback ){
-			var device = tc.getDevice( device.id );
-			if( device instanceof Error ) return callback( device );
-			
-			tc.getStatus( device, function(state){
-				callback( state.spot_cleaning );			
-			});
-			
-		},
-		set: function( device, value, callback ) {
-			// TODO
-		}
-	},
 	
-	docked: {
-		get: function( device, callback ){
+	measure_battery: {
+		get: function( device, callback ) {
 			var device = tc.getDevice( device.id );
 			if( device instanceof Error ) return callback( device );
 			
 			tc.getStatus( device, function(state){
-				callback( state.docked );			
-			});
-			
-		},
-		set: function( device, value, callback ) {
-			// TODO
-		}
-	},
-	
-	charging: {
-		get: function( device, callback ){
-			var device = tc.getDevice( device.id );
-			if( device instanceof Error ) return callback( device );
-			
-			tc.getStatus( device, function(state){
-				callback( state.charging );			
-			});
-			
-		}
-	},
-
-	battery_level: {
-		get: function( device, callback ){
-			var device = tc.getDevice( device.id );
-			if( device instanceof Error ) return callback( device );
-			
-			tc.getStatus( device, function(state){
-				callback( state.battery_level );			
-			});
-			
+				callback( state.battery_level/100 );			
+			});			
 		}
 	}
 }

@@ -12,25 +12,28 @@
 		"name": "ThinkingBits",
 		"website": "http://www.thinkingcleaner.com"
 	},
+	"category": "appliances",
 	"dependencies": {
 		"request": "*",
 		"mdns-js": "*"
 	},
-	"permissions": [
-		"homey:manager:flow"
-	],
+	"permissions": [],
 	"images": {
 		"large": "./assets/images/large.jpg",
-		"small": "./assets/images/small.png"
+		"small": "./assets/images/small.jpg"
 	},
 	"drivers": [
 		{
+			"id": "tc",
 			"name": {
 				"en": "Thinking Cleaner"
 			},
-			"id": "tc",
+			"images": {
+				"large": "./drivers/tc/assets/images/large.png",
+				"small": "./drivers/tc/assets/images/small.png"
+			},
 			"class": "vacuumcleaner",
-			"capabilities": [ "cleaning", "docked", "spot_cleaning", "charging", "battery_level" ],
+			"capabilities": [ "vacuumcleaner_state", "measure_battery" ],
 			"pair": [
 				{
 					"id": "list_devices",
