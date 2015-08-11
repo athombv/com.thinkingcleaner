@@ -115,7 +115,7 @@ var tc = {
 			
 			if( JSON.stringify( result.status ) != tc.statusCache[ device.id ] ) {
 				tc.statusCache[ device.id ] = JSON.stringify(state);
-				module.exports.realtime('tc', {
+				module.exports.realtime({
 					id: device.id
 				}, 'state', state);
 			}
