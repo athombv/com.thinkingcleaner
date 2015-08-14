@@ -2,7 +2,7 @@
 
 function App() 
 {
-	console.log(Homey.env)
+	
 }
 
 module.exports = App;
