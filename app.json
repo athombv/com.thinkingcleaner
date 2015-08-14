@@ -1,6 +1,6 @@
 {
 	"id": "com.thinkingcleaner",
-	"version": "1.0.0",
+	"version": "0.9.0",
 	"compatibility": "0.x || 1.x",
 	"name": {
 		"en": "Thinking Cleaner"
@@ -60,7 +60,13 @@
 				"title": {
 					"en": "Started cleaning",
 					"nl": "Gestart met stofzuigen"
-				}
+				},
+				"args": [
+					{						
+						"name": "device",
+						"type": "device"
+					}
+				]
 			},
 			{
 				"id": "stopped",
