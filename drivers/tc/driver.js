@@ -1,11 +1,11 @@
 "use strict";
 
 var request 	= require('request');
-var mdns 		= require('mdns-js');
+var mdns 	= require('mdns-js');
 
 var browser;
 
-var cleaners = {};
+//var cleaners = {};
 
 function init( devices, callback ) {
 
@@ -22,50 +22,48 @@ function init( devices, callback ) {
 	});
 	
 	// found an entry
-	browser.on('update', function(cleaner) {
-				
-		// check if it's a ThinkingCleaner
+	browser.on('update', function(cleaner)
+	{		
+	    // check if it's a ThinkingCleaner
 	    if( cleaner.txt[0].indexOf('thinkingcleaner_uuid') === -1 ) return;
 	    	    
 		// parse the txt data
 		// 'tc_data={"thinkingcleaner_uuid":"011d29348f8733ee","is_configured":true}' (String) -> 
 		///			{"thinkingcleaner_uuid":"011d29348f8733ee","is_configured":true} (Object)
 		var metadata = cleaner.txt[0].substring(8);
-			metadata = JSON.parse(metadata);
+		       metadata = JSON.parse(metadata);
 		
 		var id = metadata.thinkingcleaner_uuid;
 			
 		// prevent duplicate devices (mdns sometimes fires twice)
-		if( typeof cleaners[ id ] != 'undefined' ) return;
+		if( typeof Homey.app.cleaners[ id ] != 'undefined' ) return;
 		
 		var name = cleaner.host;
 			name = name.replace('.local', '');
 	    		    
 	    // add it to the list of cleaners
-	    cleaners[ id ] = {
+	    Homey.app.cleaners[ id ] = {
 			id: id,
 			name: name,
 			ip: cleaner.addresses[0]
 	    }
-	    	    
-	    Homey.log('Found ThinkingCleaner', name, cleaner.addresses[0] );
 	    
 	    // check if this cleaner is already paired
-	    devices.forEach(function(device){
-		    if( device.id == id ) {
-			    setInterval(function(){
-				    tc.getStatus( cleaners[ id ] );
+	    devices.forEach(function(device)
+	    {
+		    if( device.id == id )
+		    {
+			    setInterval(function()
+			    {
+				    tc.getStatus( Homey.app.cleaners[ id ] );
 			    }, 5000);			    
 		    }
 	    });
-	    
-
 	});
 	
 }
 
 var tc = {
-	
 	statusCache: {},
 	
 	api: function( ip, path, callback ) {
@@ -79,8 +77,8 @@ var tc = {
 	},
 	
 	getDevice: function( id ) {
-		if( typeof cleaners[id] == 'undefined' ) return new Error("device is not connected (yet)");
-		return cleaners[id];
+		if( typeof Homey.app.cleaners[id] == 'undefined' ) return new Error("device is not connected (yet)");
+		return Homey.app.cleaners[id];
 	},
 	
 	getStatus: function( device, callback ){
@@ -127,70 +125,127 @@ var tc = {
 		tc.api(device.ip, 'command.json?command=' + command, callback);
 	}
 	
-}
+};
 
-var pair = {
-	
+var pair = function(socket)
+{
+	// this method is run when Homey.emit('start') is run on the front-end
+	socket.on('start', function( data, callback ) {
+
+	// fire the callback (you can only do this once)
+	// ( err, result )
+	callback( null, 'Started!' );
+
+	// send a message to the front-end, even after the callback has fired
+	setTimeout(function(){
+	    socket.emit("hello", "Hello to you!", function( err, result ){
+	        console.log( result ); // result is `Hi!`
+	    });
+	}, 2000);
+
+	});
+
 	// get a list of all the found Thinking Cleaners
-	list_devices: function( callback, emit, data ){
-				
+	socket.on('list_devices', function( data, callback )
+	{
 		var devices = [];
-		for( var cleaner in cleaners ) {
+		for( var cleaner in Homey.app.cleaners )
+		{
 			devices.push({
-				name: cleaners[ cleaner ].name,
+				name: Homey.app.cleaners[ cleaner ].name,
 				data: {
-					id: cleaners[ cleaner ].id
+					id: Homey.app.cleaners[ cleaner ].id
 				}
-			})
-		}		
+			});
+		}	
 		
-		callback( devices );
-	},
+		callback( null, devices );
+	});
 	
-	add_device: function( callback, emit, data ){
-		var device = cleaners[ data.data.id ];
+	//the trigger does not work? Is this updated?
+	socket.on('add_devices', function( data, callback )
+	{
+		var device = Homey.app.cleaners[ data.device.id ];
 		
 		// play a sound on the roomba when paired :)
 		tc.api( device.ip, 'command.json?command=find_me' );
-	}
-	
-}
+	});
+
+	socket.on('disconnect', function()
+	{
+		console.log("User aborted pairing, or pairing is finished");
+	});
+};
 
 module.exports.init = init;
 module.exports.pair = pair;
 
 module.exports.capabilities = {
-
 	vacuumcleaner_state: {
-		get: function( device, callback ){
-			var device = tc.getDevice( device.id );
+		get: function( device_id, command, callback )
+		{
+			var device = tc.getDevice(device_id);
 			if( device instanceof Error ) return callback( device );
 			
-			tc.getStatus( device, function(state){
-				callback({
-					"cleaning": state.cleaning,
-					"docked": state.docked,
-					"spot": state.spot_cleaning,
-					"charging": state.charging
-				});
+			tc.getStatus( device, function(state)
+			{
+				switch(command)
+				{
+					case "cleaning":
+						return callback(null, state.cleaning);
+					case "docked":
+						return callback(null, state.docked);
+					case "spot":
+						return callback(null, state.spot);
+					case "charging":
+						return callback(null, state.charging);
+				}
 			});
 			
 		},
-		set: function( device, value, callback ){
-						
-			var device = tc.getDevice( device.id );
+		set: function( device_id, command, callback )
+		{
+			var device = tc.getDevice(device_id);
 			if( device instanceof Error ) return callback( device );
-			
+
 			// first, get the status
-			tc.getStatus( device, function(state){
-							
-				// then, set the status (because clean simulates a button press, not really start/stop)
-				if( (state.cleaning && value.cleaning ) || (!state.cleaning && !value.cleaning) ) {
-					callback( value );
-				} else if( (state.cleaning && !value.cleaning) || (!state.cleaning && value.cleaning) ) {
-					tc.command( device, 'clean', function(state){
-						callback( value.cleaning );
-					});				
+			tc.getStatus( device, function(state)
+			{
+				switch(command)
+				{
+					case "cleaning":
+						if(state.cleaning)
+							return callback(state.cleaning);
+
+						tc.command( device, 'clean', function(state)
+						{
+							callback( null, true );
+						});
+					break;
+
+					case "pause":
+						if(!state.cleaning)
+							return callback( state.cleaning );
+
+						tc.command( device, 'clean', function(state)
+						{
+							callback( null, true );
+						});
+					break;
+
+					case "docking":
+						tc.command( device, 'dock', function(state)
+						{
+							callback( null, true );
+						});
+					break;	
+
+					case "spot":
+						tc.command( device, 'spot', function(state)
+						{
+							callback( null, true );
+						});
+					break;										
 				}
 			});
 			
@@ -198,13 +253,28 @@ module.exports.capabilities = {
 	},
 	
 	measure_battery: {
-		get: function( device, callback ) {
-			var device = tc.getDevice( device.id );
+		get: function( device_id, command, callback )
+		{
+			var device = tc.getDevice( device_id );
 			if( device instanceof Error ) return callback( device );
-			
-			tc.getStatus( device, function(state){
-				callback( state.battery_level/100 );			
-			});			
+
+			switch(command)
+			{
+				case "Battery is low":			
+					tc.getStatus( device, function(state)
+					{
+						if(state.battery_level == 0)
+							return callback(null, false);
+
+						if(state.battery_level < 10)
+						{
+							return callback( null, true );
+						}
+
+						return callback( null, false );
+					});
+				break;
+			}	
 		}
 	}
 }

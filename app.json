@@ -34,7 +34,7 @@
 			},
 			"class": "vacuumcleaner",
 			"capabilities": [ "vacuumcleaner_state", "measure_battery" ],
-			"pair": [
+			"pair": [		
 				{
 					"id": "list_devices",
 					"template": "list_devices",
@@ -54,35 +54,6 @@
 		}
 	],
 	"flow": {
-		"triggers": [
-			{
-				"id": "started",
-				"title": {
-					"en": "Started cleaning",
-					"nl": "Gestart met stofzuigen"
-				},
-				"args": [
-					{						
-						"name": "device",
-						"type": "device"
-					}
-				]
-			},
-			{
-				"id": "stopped",
-				"title": {
-					"en": "Stopped cleaning",
-					"nl": "Gestopt met stofzuigen"
-				}
-			},
-			{
-				"id": "docked",
-				"title": {
-					"en": "Docked",
-					"nl": "In het basisstation"
-				}
-			}
-		],
 		"conditions": [
 			{
 				"id": "cleaning",
@@ -119,7 +90,25 @@
 						"filter": "driver_uri=homey:app:com.thinkingcleaner&driver_id=tc"
 					}
 				]
-			}
+			},
+			{
+				"id": "battery_low",
+				"title": {
+					"en": "Battery below 10%",
+					"nl": "Batterijniveau is minder dan 10%"
+				},
+				"args": [
+					{
+						"name": "device",
+						"type": "device",
+						"placeholder": {
+							"en": "Find a Roomba...",
+							"nl": "Vind een Roomba..."
+						},
+						"filter": "driver_uri=homey:app:com.thinkingcleaner&driver_id=tc"
+					}
+				]
+			}			
 		],
 		"actions": [
 			{
@@ -175,7 +164,25 @@
 						"filter": "driver_uri=homey:app:com.thinkingcleaner&driver_id=tc"
 					}
 				]
-			}
+			},
+			{
+				"id": "spot",
+				"title": {
+					"en": "Spot cleaning",
+					"nl": "Plek schoonmaken"
+				},
+				"args": [
+					{
+						"name": "device",
+						"type": "device",
+						"placeholder": {
+							"en": "Find a Roomba...",
+							"nl": "Vind een Roomba..."
+						},
+						"filter": "driver_uri=homey:app:com.thinkingcleaner&driver_id=tc"
+					}
+				]
+			}			
 		]
 	}
 }
