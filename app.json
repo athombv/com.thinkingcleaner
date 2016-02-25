@@ -22,6 +22,15 @@
 		"large": "./assets/images/large.jpg",
 		"small": "./assets/images/small.jpg"
 	},
+	"contributors": {
+		"developers": [
+			{
+				"name": "Tim van de Vathorst",
+				"website": "http://timvandevathorst.nl",
+				"email": "info@timvandevathorst.nl"
+			}
+		]
+	},
 	"drivers": [
 		{
 			"id": "tc",
