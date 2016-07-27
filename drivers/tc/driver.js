@@ -1,280 +1,488 @@
 "use strict";
 
-var request 	= require('request');
-var mdns 	= require('mdns-js');
+const mdns = require('mdns-js');
+const request = require('request');
+const ThinkingCleaner = require('node-thinking-cleaner');
 
-var browser;
+var devices = [];
+var temp_devices = [];
+var discoveryDebouncer;
 
-//var cleaners = {};
+module.exports.init = function (devices_data, callback) {
 
-function init( devices, callback ) {
+	// Set all devices unavailable
+	for (let x in devices_data) {
+		module.exports.setUnavailable(devices_data[x], "Offline");
+	}
 
-	//if you have another mdns daemon running, like avahi or bonjour, uncomment following line
-	mdns.excludeInterface('0.0.0.0');
-	
-	// find the Thinking Cleaner device
-	browser = mdns.createBrowser();
-	
-	// start discovery when ready
-	browser.on('ready', function () {
-		browser.discover();
+	// Start discovery
+	discover().then(results => {
+		for (let i in results) {
+
+			// Check if pre-installed
+			let preInstalled = false;
+			for (let x in devices_data) {
+				if (devices_data[x].id === results[i].data.id) preInstalled = true;
+			}
+
+			// If valid and not added and already installed
+			if (!getDevice(results[i].id) && preInstalled) {
+
+				// Add it
+				devices.push(results[i]);
+
+				// Mark as available
+				module.exports.setAvailable(results[i].data);
+
+				// Listen for events from device
+				listenForEvents(results[i]);
+			}
+		}
+
 		callback();
 	});
-	
-	// found an entry
-	browser.on('update', function(cleaner)
-	{		
-	    // check if it's a ThinkingCleaner
-	    if( cleaner.txt[0].indexOf('thinkingcleaner_uuid') === -1 ) return;
-	    	    
-		// parse the txt data
-		// 'tc_data={"thinkingcleaner_uuid":"011d29348f8733ee","is_configured":true}' (String) -> 
-		///			{"thinkingcleaner_uuid":"011d29348f8733ee","is_configured":true} (Object)
-		var metadata = cleaner.txt[0].substring(8);
-		       metadata = JSON.parse(metadata);
-		
-		var id = metadata.thinkingcleaner_uuid;
-			
-		// prevent duplicate devices (mdns sometimes fires twice)
-		if( typeof Homey.app.cleaners[ id ] != 'undefined' ) return;
-		
-		var name = cleaner.host;
-			name = name.replace('.local', '');
-	    		    
-	    // add it to the list of cleaners
-	    Homey.app.cleaners[ id ] = {
-			id: id,
-			name: name,
-			ip: cleaner.addresses[0]
-	    }
-	    
-	    // check if this cleaner is already paired
-	    devices.forEach(function(device)
-	    {
-		    if( device.id == id )
-		    {
-			    setInterval(function()
-			    {
-				    tc.getStatus( Homey.app.cleaners[ id ] );
-			    }, 5000);			    
-		    }
-	    });
-	});
-	
-}
 
-var tc = {
-	statusCache: {},
-	
-	api: function( ip, path, callback ) {
-		request({
-			url: 'http://' + ip + '/' + path,
-			json: true
-		}, function( err, httpResponse, body){
-			if( err ) return false;
-			if( typeof callback == 'function' ) callback(body);
-		});		
-	},
-	
-	getDevice: function( id ) {
-		if( typeof Homey.app.cleaners[id] == 'undefined' ) return new Error("device is not connected (yet)");
-		return Homey.app.cleaners[id];
-	},
-	
-	getStatus: function( device, callback ){
-		tc.api(device.ip, 'status.json', function( result ){
-						
-			// replace string ints with booleans
-			for( var key in result.status ) {
-				if( result.status[key] === '0' ) result.status[key] = false;
-				if( result.status[key] === '1' ) result.status[key] = true;
+	// Start listening for flow events
+	initFlows();
+};
+
+module.exports.pair = function (socket) {
+
+	socket.on('list_devices', function (data, callback) {
+
+		discover().then(devices => {
+			let result = [];
+
+			for (let i in devices) {
+
+				// Check if already found
+				let already_found = false;
+				for (let j in temp_devices) {
+					if (temp_devices[j].data.id === devices[i].data.id) already_found = true;
+				}
+				if (!already_found) temp_devices.push(devices[i]);
+
+				// Push result
+				result.push({
+					name: devices[i].name,
+					data: {
+						id: devices[i].data.id
+					}
+				});
 			}
-			
-			// generate the state object						
-			var state = {
-				cleaning		: result.status['cleaning'],
-				spot_cleaning	: result.status['cleaner_state'] == 'st_clean_spot',
-				docked			: result.status['cleaner_state'].substr(0,7) == 'st_base',
-				charging		: result.status['cleaner_state'] == 'st_base_recon'
-					|| result.status['cleaner_state'] == 'st_base_full'
-					|| result.status['cleaner_state'] == 'st_base_trickle',
-				battery_level	: result.status.battery_charge
-			}
-						
-			// perform callback
-			if( typeof callback == 'function' ) {
-				callback( state );
-			}
-						
-			// emit realtime event if something has changed
-			if( typeof tc.statusCache[ device.id ] == 'undefined' ) {
-				tc.statusCache[ device.id ] = JSON.stringify(state);
-			}
-			
-			if( JSON.stringify( result.status ) != tc.statusCache[ device.id ] ) {
-				tc.statusCache[ device.id ] = JSON.stringify(state);
-				module.exports.realtime({
-					id: device.id
-				}, 'state', state);
-			}
-			
+
+			// Callback with result
+			callback(null, result);
 		});
-	},
-	
-	command: function( device, command, callback ){
-		tc.api(device.ip, 'command.json?command=' + command, callback);
-	}
-	
+	});
+
+	socket.on("disconnected", function () {
+		temp_devices = [];
+	})
 };
 
-var pair = function(socket)
-{
-	// this method is run when Homey.emit('start') is run on the front-end
-	socket.on('start', function( data, callback ) {
-
-	// fire the callback (you can only do this once)
-	// ( err, result )
-	callback( null, 'Started!' );
-
-	// send a message to the front-end, even after the callback has fired
-	setTimeout(function(){
-	    socket.emit("hello", "Hello to you!", function( err, result ){
-	        console.log( result ); // result is `Hi!`
-	    });
-	}, 2000);
-
-	});
-
-	// get a list of all the found Thinking Cleaners
-	socket.on('list_devices', function( data, callback )
-	{
-		var devices = [];
-		for( var cleaner in Homey.app.cleaners )
-		{
-			devices.push({
-				name: Homey.app.cleaners[ cleaner ].name,
-				data: {
-					id: Homey.app.cleaners[ cleaner ].id
-				}
-			});
-		}	
-		
-		callback( null, devices );
-	});
-	
-	//the trigger does not work? Is this updated?
-	socket.on('add_devices', function( data, callback )
-	{
-		var device = Homey.app.cleaners[ data.device.id ];
-		
-		// play a sound on the roomba when paired :)
-		tc.api( device.ip, 'command.json?command=find_me' );
-	});
-
-	socket.on('disconnect', function()
-	{
-		console.log("User aborted pairing, or pairing is finished");
-	});
-};
-
-module.exports.init = init;
-module.exports.pair = pair;
-
+let stateDebouncer = null;
 module.exports.capabilities = {
+
 	vacuumcleaner_state: {
-		get: function( device_id, command, callback )
-		{
-			var device = tc.getDevice(device_id);
-			if( device instanceof Error ) return callback( device );
-			
-			tc.getStatus( device, function(state)
-			{
-				switch(command)
-				{
-					case "cleaning":
-						return callback(null, state.cleaning);
-					case "docked":
-						return callback(null, state.docked);
-					case "spot":
-						return callback(null, state.spot);
-					case "charging":
-						return callback(null, state.charging);
-				}
-			});
-			
+
+		get: function (device_data, callback) {
+			if (!device_data) return new Error("invalid_device");
+			let device = getDevice(device_data.id);
+			if (device) {
+				callback(null, device.api.cleaner_state);
+			}
+			else {
+				callback(true, false);
+			}
 		},
-		set: function( device_id, command, callback )
-		{
-			var device = tc.getDevice(device_id);
-			if( device instanceof Error ) return callback( device );
 
-			// first, get the status
-			tc.getStatus( device, function(state)
-			{
-				switch(command)
-				{
-					case "cleaning":
-						if(state.cleaning)
-							return callback(state.cleaning);
+		set: function (device_data, command, callback) {
+			if (!device_data) return new Error("invalid_device");
+			var device = getDevice(device_data.id);
 
-						tc.command( device, 'clean', function(state)
-						{
-							callback( null, true );
-						});
-					break;
-
-					case "pause":
-						if(!state.cleaning)
-							return callback( state.cleaning );
-
-						tc.command( device, 'clean', function(state)
-						{
-							callback( null, true );
-						});
-					break;
-
-					case "docking":
-						tc.command( device, 'dock', function(state)
-						{
-							callback( null, true );
-						});
-					break;	
-
-					case "spot":
-						tc.command( device, 'spot', function(state)
-						{
-							callback( null, true );
-						});
-					break;										
+			console.log('set vacuumcleaner_state:');
+			console.log(command);
+			if (device) {
+				if (stateDebouncer) {
+					clearTimeout(stateDebouncer);
+					stateDebouncer = null;
 				}
-			});
-			
+				switch (command) {
+					case "cleaning":
+						stateDebouncer = setTimeout(() => {
+							console.log('start cleaning');
+							device.api.startCleaning().then(() => {
+								callback(null, true);
+							}).catch(() => {
+								callback(true, false);
+							});
+						}, 2000);
+						break;
+					case "spot_cleaning":
+						stateDebouncer = setTimeout(() => {
+							console.log('start spot cleaning');
+							device.api.startSpotCleaning().then(() => {
+								callback(null, true);
+							}).catch(() => {
+								callback(true, false);
+							});
+						}, 2000);
+
+						break;
+					case "stopped":
+						stateDebouncer = setTimeout(() => {
+							console.log('stop cleaning');
+							device.api.stopCleaning().then(() => {
+								callback(null, true);
+							}).catch(() => {
+								callback(true, false);
+							});
+						}, 2000);
+
+						break;
+					case "docked":
+						stateDebouncer = setTimeout(() => {
+							console.log('go to dock');
+							device.api.goToDock().then(() => {
+								callback(null, true);
+							}).catch(() => {
+								callback(true, false);
+							});
+						}, 2000);
+
+						break;
+					case "charging":
+						stateDebouncer = setTimeout(() => {
+							console.log('go to dock (charging)');
+							device.api.goToDock().then(() => {
+								callback(null, true);
+							}).catch(() => {
+								callback(true, false);
+							});
+						}, 2000);
+						break;
+				}
+			}
+			else {
+				callback(true, false);
+			}
 		}
 	},
-	
+
 	measure_battery: {
-		get: function( device_id, command, callback )
-		{
-			var device = tc.getDevice( device_id );
-			if( device instanceof Error ) return callback( device );
 
-			switch(command)
-			{
-				case "Battery is low":			
-					tc.getStatus( device, function(state)
-					{
-						if(state.battery_level == 0)
-							return callback(null, false);
+		get: function (device_data, callback) {
+			if (!device_data) return new Error("invalid_device");
+			let device = getDevice(device_data.id);
+			if (device) {
+				callback(null, device.api.battery_charge);
+			}
+			else {
+				callback(true, false);
+			}
+		}
+	}
+};
 
-						if(state.battery_level < 10)
-						{
-							return callback( null, true );
+/**
+ * Handle deleted devices
+ * @param device_data
+ */
+module.exports.deleted = function (device_data) {
+
+	// Remove device from internal list
+	devices = devices.filter(function (x) {
+		return x.data.id != device_data.id;
+	});
+};
+
+/**
+ * Handle added devices
+ * @param device_data
+ */
+module.exports.added = function (device_data) {
+
+	// Get device
+	let device = getDevice(device_data.id, temp_devices);
+
+	// Listen for events from device
+	listenForEvents(device);
+
+	// Add device from temp
+	devices.push(device);
+};
+
+/**
+ * Starts to listen on the events being
+ * emitted by the device, handles realtime
+ * updates and availability.
+ * @param device
+ */
+function listenForEvents(device) {
+	if (device && device.api) {
+
+		device.api.on("battery_charge", battery_charge => {
+
+			console.log("TC: emit realtime measure_battery change: " + battery_charge);
+
+			// Emit realtime event
+			module.exports.realtime(device.data, "measure_battery", battery_charge);
+
+		}).on("cleaner_state", state => {
+
+			console.log("TC: emit realtime vacuumcleaner_state change: " + state);
+
+			// Emit realtime
+			module.exports.realtime(device.data, "vacuumcleaner_state", state);
+
+		}).on("started_cleaning", () => {
+
+			console.log("TC: trigger started_cleaning flow");
+
+			// Trigger flow
+			Homey.manager("flow").triggerDevice('started_cleaning', {}, {}, device.data, function (err, result) {
+				if (err) return Homey.error(err);
+			});
+		}).on("unavailable", () => {
+
+			// Emit realtime
+			module.exports.setUnavailable(device.data, "Offline");
+
+			// Check if already discovering
+			if (discoveryDebouncer) return;
+
+			discoveryDebouncer = setTimeout(() => {
+
+				discover().then(results => {
+					for (let i in results) {
+
+
+						// If valid and not added and already installed
+						if (device.data.id === results[i].data.id) {
+
+							for (let j in devices) {
+								if (device.data.id === devices[i].data.id) {
+									devices.splice(i, 1);
+								}
+							}
+
+							// Add updated device
+							devices.push(results[i]);
+
+							// Mark as available
+							module.exports.setAvailable(results[i].data);
+
+							// Listen for events from device
+							listenForEvents(results[i]);
 						}
+					}
+				});
+			}, 500);
 
-						return callback( null, false );
-					});
-				break;
-			}	
+		}).on("available", () => {
+
+			// Emit realtime
+			module.exports.setAvailable(device.data);
+		});
+	}
+}
+
+/**
+ * Start listening on incoming flow events.
+ */
+function initFlows() {
+
+	Homey.manager('flow').on('condition.cleaning', function (callback, args) {
+
+		// Double check given args
+		if (args.device_data) {
+
+			var device = getDevice(args.device_data.id);
+			if (device) {
+
+				callback(null, device.api.cleaning)
+			}
+			else {
+				callback(true, false);
+			}
+		}
+	});
+
+	Homey.manager('flow').on('condition.docked', function (callback, args) {
+
+		// Double check given args
+		if (args.device_data) {
+
+			var device = getDevice(args.device_data.id);
+			if (device) {
+
+				callback(null, device.api.docked)
+			}
+			else {
+				callback(true, false);
+			}
+		}
+	});
+
+	Homey.manager('flow').on('condition.battery_low', function (callback, args) {
+
+		// Double check given args
+		if (args.device_data) {
+
+			var device = getDevice(args.device_data.id);
+			if (device) {
+
+				callback(null, (device.api.battery_charge <= 10))
+			}
+			else {
+				callback(true, false);
+			}
+		}
+	});
+
+	Homey.manager('flow').on('action.clean', function (callback, args) {
+
+		// Double check given args
+		if (args.device_data) {
+
+			var device = getDevice(args.device_data.id);
+			if (device) {
+				device.api.startCleaning().then(() => {
+					callback(null, true);
+				}).catch(() => {
+					callback(true, false);
+				});
+			}
+			else {
+				callback(true, false);
+			}
+		}
+	});
+
+	Homey.manager('flow').on('action.pause', function (callback, args) {
+
+		// Double check given args
+		if (args.device_data) {
+
+			var device = getDevice(args.device_data.id);
+			if (device) {
+				device.api.stopCleaning().then(() => {
+					callback(null, true);
+				}).catch(() => {
+					callback(true, false);
+				});
+			}
+			else {
+				callback(true, false);
+			}
+		}
+	});
+
+	Homey.manager('flow').on('action.dock', function (callback, args) {
+
+		// Double check given args
+		if (args.device_data) {
+			var device = getDevice(args.device_data.id);
+			if (device) {
+				device.api.stopCleaning().then(() => {
+					setTimeout(() => {
+						device.api.goToDock().then(() => {
+							callback(null, true);
+						}).catch(() => {
+							callback(true, false);
+						});
+					}, 1500);
+				}).catch(() => {
+					callback(true, false);
+				});
+			}
+			else {
+				callback(true, false);
+			}
+		}
+	});
+
+	Homey.manager('flow').on('action.spot', function (callback, args) {
+
+		// Double check given args
+		if (args.device_data) {
+
+			var device = getDevice(args.device_data.id);
+			if (device) {
+				device.api.startSpotCleaning().then(() => {
+					callback(null, true);
+				}).catch(() => {
+					callback(true, false);
+				});
+			}
+			else {
+				callback(true, false);
+			}
+		}
+	});
+}
+
+/**
+ * Do device discovery through API
+ * @returns {Promise}
+ */
+function discover() {
+	return new Promise((resolve, reject) => {
+
+		// Make request
+		request("http://thinkingsync.com/api/v1/discover/devices", { timeout: 5000 }, function (error, response, body) {
+			if (error) return reject(error);
+
+			// Parse response
+			let devices = JSON.parse(body);
+
+			let result = [];
+
+			// If data is present
+			if (devices) {
+
+				// Loop the devices
+				for (let i in devices) {
+
+					// Create TC object
+					let tc = {
+						name: devices[i].name,
+						data: {
+							id: devices[i].uuid
+						},
+						api: new ThinkingCleaner({
+							name: devices[i].name,
+							id: devices[i].uuid,
+							ip: devices[i].local_ip,
+							polling: true
+						})
+					};
+
+					// Push result on stack
+					result.push(tc);
+				}
+			}
+
+			// Done, resolve with result
+			resolve(result);
+		});
+	});
+}
+
+/**
+ * Get device from the devices list,
+ * if provided it will search a different
+ * list.
+ * @param id
+ * @param list
+ * @returns {*}
+ */
+function getDevice(id, list) {
+	let search_list = list || devices;
+	for (let x in search_list) {
+		if (search_list[x].data.id === id) {
+			return search_list[x];
 		}
 	}
 }
