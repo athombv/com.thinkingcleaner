@@ -89,8 +89,8 @@ module.exports.capabilities = {
 		get: function (device_data, callback) {
 			if (!device_data) return new Error("invalid_device");
 			let device = getDevice(device_data.id);
-			if (device) {
-				callback(null, device.api.cleaner_state);
+			if (device && device.api && device.api.cleaner_state) {
+				callback(null, device.api.cleaner_state || 'stopped');
 			}
 			else {
 				callback(true, false);
