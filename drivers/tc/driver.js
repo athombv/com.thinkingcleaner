@@ -434,8 +434,14 @@ function discover() {
 		request("http://thinkingsync.com/api/v1/discover/devices", { timeout: 5000 }, function (error, response, body) {
 			if (error) return reject(error);
 
-			// Parse response
-			let devices = JSON.parse(body);
+			let devices = null;
+
+			try {
+				// Parse response
+				devices = JSON.parse(body);
+			} catch (err) {
+				console.error('TC: Error, failed to parse incoming discovery data');
+			}
 
 			let result = [];
 
