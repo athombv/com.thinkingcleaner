@@ -39,7 +39,7 @@ module.exports.init = function (devices_data, callback) {
 			}
 		}
 
-		callback();
+		callback(null, true);
 	});
 
 	// Start listening for flow events
