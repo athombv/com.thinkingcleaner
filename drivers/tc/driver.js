@@ -244,6 +244,14 @@ function listenForEvents(device) {
 			Homey.manager("flow").triggerDevice('started_cleaning', {}, {}, device.data, function (err, result) {
 				if (err) return Homey.error(err);
 			});
+		}).on("started_charging", () => {
+
+			console.log("TC: trigger started_charging flow");
+
+			// Trigger flow
+			Homey.manager("flow").triggerDevice('started_charging', {}, {}, device.data, function (err, result) {
+				if (err) return Homey.error(err);
+			});
 		}).on("unavailable", () => {
 
 			// Emit realtime
