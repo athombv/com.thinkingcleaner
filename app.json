@@ -1,188 +1,201 @@
 {
-	"id": "com.thinkingcleaner",
-	"version": "1.0.1",
-	"compatibility": "0.x || 1.x",
-	"name": {
-		"en": "Thinking Cleaner"
-	},
-	"description": {
-		"en": "Control your Roomba"
-	},
-	"author": {
-		"name": "ThinkingBits",
-		"website": "http://www.thinkingcleaner.com"
-	},
-	"category": "appliances",
-	"dependencies": {
-		"request": "*",
-		"mdns-js": "*"
-	},
-	"permissions": [],
-	"images": {
-		"large": "./assets/images/large.jpg",
-		"small": "./assets/images/small.jpg"
-	},
-	"drivers": [
-		{
-			"id": "tc",
-			"name": {
-				"en": "Thinking Cleaner"
-			},
-			"images": {
-				"large": "./drivers/tc/assets/images/large.png",
-				"small": "./drivers/tc/assets/images/small.png"
-			},
-			"class": "vacuumcleaner",
-			"capabilities": [ "vacuumcleaner_state", "measure_battery" ],
-			"pair": [		
-				{
-					"id": "list_devices",
-					"template": "list_devices",
-					"navigation": {
-						"next": "add_cleaner"
-					}
-				},
-				{
-					"id": "add_cleaner",
-					"template": "add_devices"
-				}
-			],		
-			"mobile": {
-				"css": [ "style.css" ],
-				"js": [ "tc.js" ]
-			}
-		}
-	],
-	"flow": {
-		"conditions": [
-			{
-				"id": "cleaning",
-				"title": {
-					"en": "Is cleaning",
-					"nl": "Aan het schoonmaken"
-				},
-				"args": [
-					{
-						"name": "device",
-						"type": "device",
-						"placeholder": {
-							"en": "Find a Roomba...",
-							"nl": "Vind een Roomba..."
-						},
-						"filter": "driver_uri=homey:app:com.thinkingcleaner&driver_id=tc"
-					}
-				]
-			},
-			{
-				"id": "docked",
-				"title": {
-					"en": "Is docked",
-					"nl": "In het basisstation"
-				},
-				"args": [
-					{
-						"name": "device",
-						"type": "device",
-						"placeholder": {
-							"en": "Find a Roomba...",
-							"nl": "Vind een Roomba..."
-						},
-						"filter": "driver_uri=homey:app:com.thinkingcleaner&driver_id=tc"
-					}
-				]
-			},
-			{
-				"id": "battery_low",
-				"title": {
-					"en": "Battery below 10%",
-					"nl": "Batterijniveau is minder dan 10%"
-				},
-				"args": [
-					{
-						"name": "device",
-						"type": "device",
-						"placeholder": {
-							"en": "Find a Roomba...",
-							"nl": "Vind een Roomba..."
-						},
-						"filter": "driver_uri=homey:app:com.thinkingcleaner&driver_id=tc"
-					}
-				]
-			}			
-		],
-		"actions": [
-			{
-				"id": "clean",
-				"title": {
-					"en": "Start cleaning",
-					"nl": "Ga stofzuigen"
-				},
-				"args": [
-					{
-						"name": "device",
-						"type": "device",
-						"placeholder": {
-							"en": "Find a Roomba...",
-							"nl": "Vind een Roomba..."
-						},
-						"filter": "driver_uri=homey:app:com.thinkingcleaner&driver_id=tc"
-					}
-				]
-			},
-			{
-				"id": "pause",
-				"title": {
-					"en": "Pause cleaning",
-					"nl": "Pauzeer stofzuigen"
-				},
-				"args": [
-					{
-						"name": "device",
-						"type": "device",
-						"placeholder": {
-							"en": "Find a Roomba...",
-							"nl": "Vind een Roomba..."
-						},
-						"filter": "driver_uri=homey:app:com.thinkingcleaner&driver_id=tc"
-					}
-				]
-			},
-			{
-				"id": "dock",
-				"title": {
-					"en": "Go to docking station",
-					"nl": "Ga naar basisstation"
-				},
-				"args": [
-					{
-						"name": "device",
-						"type": "device",
-						"placeholder": {
-							"en": "Find a Roomba...",
-							"nl": "Vind een Roomba..."
-						},
-						"filter": "driver_uri=homey:app:com.thinkingcleaner&driver_id=tc"
-					}
-				]
-			},
-			{
-				"id": "spot",
-				"title": {
-					"en": "Spot cleaning",
-					"nl": "Plek schoonmaken"
-				},
-				"args": [
-					{
-						"name": "device",
-						"type": "device",
-						"placeholder": {
-							"en": "Find a Roomba...",
-							"nl": "Vind een Roomba..."
-						},
-						"filter": "driver_uri=homey:app:com.thinkingcleaner&driver_id=tc"
-					}
-				]
-			}			
-		]
-	}
+  "id": "com.thinkingcleaner",
+  "version": "2.0.4",
+  "compatibility": ">=0.8.33",
+  "name": {
+    "en": "Thinking Cleaner"
+  },
+  "description": {
+    "en": "Control your Roomba"
+  },
+  "author": {
+    "name": "Athom B.V.",
+    "website": "http://www.athom.com"
+  },
+  "category": "appliances",
+  "permissions": [],
+  "images": {
+    "large": "./assets/images/large.jpg",
+    "small": "./assets/images/small.jpg"
+  },
+  "contributors": {
+    "developers": [
+      {
+        "name": "Tim van de Vathorst",
+        "website": "http://timvandevathorst.nl",
+        "email": "info@timvandevathorst.nl"
+      }
+    ]
+  },
+  "drivers": [
+    {
+      "id": "tc",
+      "name": {
+        "en": "Thinking Cleaner"
+      },
+      "images": {
+        "large": "./drivers/tc/assets/images/large.png",
+        "small": "./drivers/tc/assets/images/small.png"
+      },
+      "class": "vacuumcleaner",
+      "capabilities": [
+        "vacuumcleaner_state",
+        "measure_battery"
+      ],
+      "pair": [
+        {
+          "id": "list_devices",
+          "template": "list_devices",
+          "navigation": {
+            "next": "add_cleaner"
+          }
+        },
+        {
+          "id": "add_cleaner",
+          "template": "add_devices"
+        }
+      ],
+      "mobile": {
+        "components": [
+          {
+            "capabilities": [
+              "measure_battery"
+            ],
+            "id": "battery"
+          },
+          {
+            "capabilities": [
+            ],
+            "id": "icon"
+          },
+          {
+            "capabilities": [
+              "vacuumcleaner_state"
+            ],
+            "id": "picker"
+          }
+        ]
+      }
+    }
+  ],
+  "flow": {
+    "conditions": [
+      {
+        "id": "cleaning",
+        "title": {
+          "en": "!{{Is|Is not}} cleaning",
+          "nl": "!{{Aan|Niet aan}} het schoonmaken"
+        },
+        "args": [
+          {
+            "name": "device_data",
+            "type": "device",
+            "filter": "driver_uri=homey:app:com.thinkingcleaner&driver_id=tc"
+          }
+        ]
+      },
+      {
+        "id": "docked",
+        "title": {
+          "en": "!{{Is|Is not}} docked",
+          "nl": "!{{In|Niet in}} het basisstation"
+        },
+        "args": [
+          {
+            "name": "device_data",
+            "type": "device",
+            "filter": "driver_uri=homey:app:com.thinkingcleaner&driver_id=tc"
+          }
+        ]
+      },
+      {
+        "id": "battery_low",
+        "title": {
+          "en": "Battery !{{below|above}} 10%",
+          "nl": "Batterijniveau is !{{minder|meer}} dan 10%"
+        },
+        "args": [
+          {
+            "name": "device_data",
+            "type": "device",
+            "filter": "driver_uri=homey:app:com.thinkingcleaner&driver_id=tc"
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "clean",
+        "title": {
+          "en": "Start cleaning",
+          "nl": "Ga stofzuigen"
+        },
+        "args": [
+          {
+            "name": "device_data",
+            "type": "device",
+            "filter": "driver_uri=homey:app:com.thinkingcleaner&driver_id=tc"
+          }
+        ]
+      },
+      {
+        "id": "pause",
+        "title": {
+          "en": "Pause cleaning",
+          "nl": "Pauzeer stofzuigen"
+        },
+        "args": [
+          {
+            "name": "device_data",
+            "type": "device",
+            "filter": "driver_uri=homey:app:com.thinkingcleaner&driver_id=tc"
+          }
+        ]
+      },
+      {
+        "id": "dock",
+        "title": {
+          "en": "Go to docking station",
+          "nl": "Ga naar basisstation"
+        },
+        "args": [
+          {
+            "name": "device_data",
+            "type": "device",
+            "filter": "driver_uri=homey:app:com.thinkingcleaner&driver_id=tc"
+          }
+        ]
+      },
+      {
+        "id": "spot",
+        "title": {
+          "en": "Start spot cleaning",
+          "nl": "Plek schoonmaken"
+        },
+        "args": [
+          {
+            "name": "device_data",
+            "type": "device",
+            "filter": "driver_uri=homey:app:com.thinkingcleaner&driver_id=tc"
+          }
+        ]
+      }
+    ],
+    "triggers": [
+      {
+        "id": "started_cleaning",
+        "title": {
+          "en": "Started cleaning",
+          "nl": "Begonnen met schoonmaken"
+        },
+        "args": [
+          {
+            "name": "device_data",
+            "type": "device",
+            "filter": "driver_uri=homey:app:com.thinkingcleaner&driver_id=tc"
+          }
+        ]
+      }
+    ]
+  }
 }
