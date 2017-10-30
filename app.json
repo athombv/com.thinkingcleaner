@@ -1,6 +1,6 @@
 {
   "id": "com.thinkingcleaner",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "compatibility": ">=0.8.33",
   "name": {
     "en": "Thinking Cleaner"
@@ -64,8 +64,7 @@
             "id": "battery"
           },
           {
-            "capabilities": [
-            ],
+            "capabilities": [],
             "id": "icon"
           },
           {
@@ -184,8 +183,7 @@
     "triggers": [
       {
         "id": "started_cleaning",
-        "title":
-        {
+        "title": {
           "en": "Started cleaning",
           "nl": "Begonnen met schoonmaken"
         },
@@ -199,8 +197,7 @@
       },
       {
         "id": "started_charging",
-        "title":
-        {
+        "title": {
           "en": "Started charging",
           "nl": "Begonnen met laden"
         },
@@ -211,7 +208,7 @@
             "filter": "driver_uri=homey:app:com.thinkingcleaner&driver_id=tc"
           }
         ]
-      }   
+      }
     ]
   }
 }

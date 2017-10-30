@@ -222,19 +222,27 @@ module.exports.added = function (device_data) {
 function listenForEvents(device) {
 	if (device && device.api) {
 
+		const VACUUMCLEANER_STATES = [
+			'cleaning',
+			'spot_cleaning',
+			'docked',
+			'charging',
+			'stopped'
+		];
+
 		device.api.on("battery_charge", battery_charge => {
 
 			console.log("TC: emit realtime measure_battery change: " + battery_charge);
 
 			// Emit realtime event
-			module.exports.realtime(device.data, "measure_battery", battery_charge);
+			if (typeof battery_charge === 'number') module.exports.realtime(device.data, "measure_battery", battery_charge);
 
 		}).on("cleaner_state", state => {
 
 			console.log("TC: emit realtime vacuumcleaner_state change: " + state);
 
 			// Emit realtime
-			module.exports.realtime(device.data, "vacuumcleaner_state", state);
+			if (VACUUMCLEANER_STATES.includes(state)) module.exports.realtime(device.data, "vacuumcleaner_state", state);
 
 		}).on("started_cleaning", () => {
 
